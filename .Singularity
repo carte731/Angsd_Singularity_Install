@@ -15,10 +15,8 @@ Include: yum
                 SOURCE="${BASESOURCE}"
         fi
 
-        echo alias "angsd-wrapper='`pwd -P`/angsd-wrapper'" >> ~/.bash_profile
-
         cd ${SOURCE}
-        mkdir dependencies
+        
         cd dependencies
         ROOT=$(pwd)
 
@@ -26,11 +24,19 @@ Include: yum
         tar -jxvf samtools-1.8.tar.bz2
         rm samtools-1.8.tar.bz2
         cd samtools-1.8
+        samPath=$(pwd)
+        HTSLIB_DIR=$(pwd -P)/htslib-1.8
+
+        cd "${HTSLIB_DIR}"
+        ./configure --prefix=$(pwd)
+        make
+        make install
+        cd "${samPath}"
+
         ./configure --with-htslib=${HTSLIB_DIR} --prefix=$(pwd)
         make
         make install
         make clean
-        HTSLIB_DIR=$(pwd -P)/htslib-1.8
 
         cd "${ROOT}"
 
@@ -62,7 +68,11 @@ Include: yum
 
         cd "${ROOT}"
 
+        echo alias "angsd-wrapper='${SOURCE}/angsd-wrapper'" >> ~/.bash_profile
+        echo "export PATH=${samPath}:"'${PATH}' >> ~/.bash_profile # Add the path to bash_profile
+
 %post
+        yum group install -y "Development Tools"
     	yum -y install wget
     	yum install -y tar.x86_64	
 	yum install -y git
@@ -74,9 +84,8 @@ Include: yum
 	yum install -y xz-devel
 	#yum groupinstall -y "Development Tools"
 	yum install -y xz 
-	yum install -y xz-devel
-	#yum install -y lzma-devel
 	yum install -y curl-devel
 	yum -y update	
 
 	yum clean all
+        
